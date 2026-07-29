@@ -1,0 +1,144 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+
+      routes:
+
+        - id: inube-auth-auth
+          uri: lb://INUBE-AUTHENTICATION-SERVICE
+          predicates:
+            - Path=/api/inube/auth/**
+
+        - id: inube-auth-user
+          uri: lb://INUBE-AUTHENTICATION-SERVICE
+          predicates:
+            - Path=/api/inube/user/**
+          filters:
+            - AuthenticationFilter
+
+        - id: inube-service
+          uri: lb://INUBE-SERVICE
+          predicates:
+            - Path=/api/inube/service/**
+          filters:
+            - AuthenticationFilter
+
+        - id: books-service
+          uri: lb://BOOKS-SERVICE
+
+          predicates:
+            - Path=/api/inube/books/**
+
+          filters:
+            - AuthenticationFilter
+
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userKeyResolver}"
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+            - name: CircuitBreaker
+              args:
+              name: booksCircuitBreaker
+              fallbackUri: forward:/fallback/books
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:eureka123@localhost:8106/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+    healthcheck:
+      enabled: true
+
+  instance:
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+    prefer-ip-address: true
+
+server:
+  port: 8107
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  metrics:
+    tags:
+      application: inube-gateway-service
+
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+jwt:
+  secret: e4b7f9d2a13c4efb92d7c31ae8f04c9bd3e27fa649c8d1e0b57a23cf8b9e41ac
+
+info:
+  app:
+    name: Inube Gateway Service
+    version: 1.0.0
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.inube.inube_gateway_service: DEBUG
+
+resilience4j:
+
+  circuitbreaker:
+
+    instances:
+
+      authCircuitBreaker:
+
+        slidingWindowSize: 10
+
+        minimumNumberOfCalls: 5
+
+        failureRateThreshold: 50
+
+        waitDurationInOpenState: 30s
+
+        permittedNumberOfCallsInHalfOpenState: 3
+
+      authUserCircuitBreaker:
+
+        slidingWindowSize: 10
+
+        minimumNumberOfCalls: 5
+
+        failureRateThreshold: 50
+
+        waitDurationInOpenState: 30s
+
+        permittedNumberOfCallsInHalfOpenState: 3
+
+      booksCircuitBreaker:
+
+        slidingWindowSize: 10
+
+        minimumNumberOfCalls: 5
+
+        failureRateThreshold: 50
+
+        waitDurationInOpenState: 30s
+
+        permittedNumberOfCallsInHalfOpenState: 3
