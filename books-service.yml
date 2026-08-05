@@ -1,0 +1,27 @@
+server:
+  port: 8110
+
+spring:
+  application:
+    name: books-service
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521:free
+    username: bamboDevSpringSecurityCloud
+    password: bamboDevSpringSecurityCloud
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8106/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
